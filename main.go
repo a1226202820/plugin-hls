@@ -1,10 +1,10 @@
 package hls
 
 import (
+	"encoding/json"
 	"bytes"
 	"compress/gzip"
-	"context"
-	"encoding/json"
+	"context"	
 	"fmt"
 	"github.com/Monibuca/engine/v2/avformat/mpegts"
 	"io"
