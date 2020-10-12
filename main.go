@@ -1,7 +1,6 @@
 package hls
 
-import (
-	"encoding/json"
+import (	
 	"bytes"
 	"compress/gzip"
 	"context"	
