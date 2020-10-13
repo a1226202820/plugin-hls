@@ -279,7 +279,7 @@ func checkHik() {
 		hikURL := HKM3U8URLF + deviceInfo[i].SysCode + HKM3U8URLB
 		log.Println(hikURL)
 		pull(hikURL, deviceInfo[i].SysCode)
-		time.Sleep(time.Duration(21) * time.Second)
+		time.Sleep(time.Duration(1) * time.Second)
 	}
 }
 
