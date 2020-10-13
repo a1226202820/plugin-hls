@@ -1,11 +1,11 @@
 package hls
 
-import (	
+import (
 	"bytes"
 	"compress/gzip"
-	"context"	
+	"context"
+	"encoding/json"
 	"fmt"
-	"github.com/Monibuca/engine/v2/avformat/mpegts"
 	"io"
 	"io/ioutil"
 	"log"
@@ -20,27 +20,26 @@ import (
 	. "github.com/Monibuca/engine/v2/util"
 	. "github.com/Monibuca/plugin-ts"
 	"github.com/quangngotan95/go-m3u8/m3u8"
+	"github.com/robfig/cron"
 )
 
 var collection = sync.Map{}
+var pesCountMap = make(map[string]int)
 var config struct {
-	Fragment     int64
-	Window       int
-	EnableWrite  bool   //启动HLS写文件
-	EnableMemory bool   // 启动内存模式
-	Path         string //存放路径
+	Fragment    int64
+	Window      int
+	EnableWrite bool   //启动HLS写文件
+	Path        string //存放路径
 }
 
 func init() {
-	config.Fragment = 10
-	config.Window = 2
 	InstallPlugin(&PluginConfig{
 		Name:   "HLS",
 		Type:   PLUGIN_PUBLISHER | PLUGIN_HOOK,
 		Config: &config,
 		Run: func() {
 			//os.MkdirAll(config.Path, 0666)
-			if config.EnableWrite || config.EnableMemory {
+			if config.EnableWrite {
 				OnPublishHooks.AddHook(writeHLS)
 			}
 		},
@@ -57,6 +56,19 @@ func init() {
 			})
 			err = sse.WriteJSON(info)
 		}
+	})
+	http.HandleFunc("/hls/listJson", func(w http.ResponseWriter, r *http.Request) {
+		var info []*HLSInfo
+		collection.Range(func(key, value interface{}) bool {
+			info = append(info, &value.(*HLS).HLSInfo)
+			return true
+		})
+		header := w.Header()
+		header.Set("Content-Type", "application/json")
+		header.Set("Access-Control-Allow-Origin", "*")
+		header.Set("Connection", "keep-alive")
+		json, _ := json.Marshal(info)
+		w.Write([]byte(json))
 	})
 	http.HandleFunc("/hls/save", func(w http.ResponseWriter, r *http.Request) {
 		streamPath := r.URL.Query().Get("streamPath")
@@ -80,35 +92,33 @@ func init() {
 		}
 	})
 	http.HandleFunc("/hls/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
 		if strings.HasSuffix(r.URL.Path, ".m3u8") {
 			if f, err := os.Open(filepath.Join(config.Path, strings.TrimPrefix(r.URL.Path, "/hls/"))); err == nil {
 				io.Copy(w, f)
-				err = f.Close()
 			} else {
 				w.WriteHeader(404)
 			}
 		} else if strings.HasSuffix(r.URL.Path, ".ts") {
-			tsPath := filepath.Join(config.Path, strings.TrimPrefix(r.URL.Path, "/hls/"))
-			if config.EnableMemory {
-				if ringItem, ok := memoryTs.Load(tsPath); ok {
-					w.Write(mpegts.DefaultPATPacket)
-					w.Write(mpegts.DefaultPMTPacket)
-					ringItem.(*RingItem).Wait()
-					w.Write(ringItem.(*RingItem).Buffer.Bytes())
-				} else {
-					w.WriteHeader(404)
-				}
+			if f, err := os.Open(filepath.Join(config.Path, strings.TrimPrefix(r.URL.Path, "/hls/"))); err == nil {
+				io.Copy(w, f)
 			} else {
-				if f, err := os.Open(tsPath); err == nil {
-					io.Copy(w, f)
-					err = f.Close()
-				} else {
-					w.WriteHeader(404)
-				}
+				w.WriteHeader(404)
 			}
 		}
 	})
+	checkHik()
+	spec1 := "* */10 * * * ?"
+	c1 := cron.New()
+	c1.AddFunc(spec1, func() {
+		checkHik()
+	})
+	c1.Start()
+	spec2 := "0 */10 * * * ?"
+	c2 := cron.New()
+	c2.AddFunc(spec2, func() {
+		delStopHLS()
+	})
+	c2.Start()
 }
 
 // HLS 发布者
@@ -151,7 +161,7 @@ func readM3U8(res *http.Response) (playlist *m3u8.Playlist, err error) {
 		playlist, err = m3u8.Read(reader)
 	}
 	if err != nil {
-		log.Printf("readM3U8 error:%s", err.Error())
+		// log.Printf("readM3U8 error:%s", err.Error())
 	}
 	return
 }
@@ -176,7 +186,7 @@ func (p *HLS) run(info *M3u8Info) {
 			//	return
 			//}
 			if playlist.Sequence <= sequence {
-				log.Printf("same sequence:%d,max:%d", playlist.Sequence, sequence)
+				// log.Printf("same sequence:%d,max:%d", playlist.Sequence, sequence)
 				time.Sleep(time.Second)
 				continue
 			}
@@ -226,17 +236,17 @@ func (p *HLS) run(info *M3u8Info) {
 							p.PesCount = tsCost.BufferLength - beginLen
 						}
 					} else if err != nil {
-						log.Printf("%s readTs:%v", p.StreamPath, err)
+						// log.Printf("%s readTs:%v", p.StreamPath, err)
 					}
 				} else if err != nil {
-					log.Printf("%s reqTs:%v", p.StreamPath, err)
+					// log.Printf("%s reqTs:%v", p.StreamPath, err)
 				}
 				info.M3u8Info = append(info.M3u8Info, tsCost)
 			}
 
 			time.Sleep(time.Second * time.Duration(playlist.Target) * 2)
 		} else {
-			log.Printf("%s readM3u8:%v", p.StreamPath, err)
+			// log.Printf("%s readM3u8:%v", p.StreamPath, err)
 			errcount++
 			if errcount > 10 {
 				return
@@ -260,4 +270,49 @@ func (p *HLS) Publish(streamName string) (result bool) {
 		}
 	}
 	return
+}
+
+func checkHik() {
+	var deviceInfo []*DeviceInfo
+	deviceInfo = GetDeviceList()
+	for i := 0; i < len(deviceInfo); i++ {
+		hikURL := HKM3U8URLF + deviceInfo[i].SysCode + HKM3U8URLB
+		log.Println(hikURL)
+		pull(hikURL, deviceInfo[i].SysCode)
+		time.Sleep(time.Duration(1) * time.Second)
+	}
+}
+
+func delStopHLS() {
+	var info []*HLSInfo
+	collection.Range(func(key, value interface{}) bool {
+		info = append(info, &value.(*HLS).HLSInfo)
+		return true
+	})
+	// for key, value := range pesCountMap {
+	// 	log.Println("map:", key, value)
+	// }
+	for i := 0; i < len(info); i++ {
+		hlsInfo := *info[i]
+		streamPath := hlsInfo.TSInfo.StreamInfo.StreamPath
+		totalPesCount := hlsInfo.TSInfo.TotalPesCount
+		oldTotalPesCount, ok := pesCountMap[streamPath]
+		if ok && totalPesCount == oldTotalPesCount {
+			log.Println("delete:", streamPath, ":", totalPesCount, "=", oldTotalPesCount)
+			collection.Delete(streamPath)
+			delete(pesCountMap, streamPath)
+		}
+		pesCountMap[streamPath] = totalPesCount
+		// log.Println("pes:", streamPath, ":", totalPesCount)
+	}
+}
+func pull(hikURL string, publishPath string) {
+	p := new(HLS)
+	var err error
+	p.Video.Req, err = http.NewRequest("GET", hikURL, nil)
+	if err == nil {
+		p.Publish(publishPath)
+	} else {
+		log.Println(fmt.Sprintf(`"errmsg":"%s"`, err.Error()))
+	}
 }

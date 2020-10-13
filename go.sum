@@ -10,8 +10,6 @@ github.com/Monibuca/engine/v2 v2.0.0 h1:8FjaScrtN8QdbcxO9zZYABMC0Re3I1O1T4p94zAX
 github.com/Monibuca/engine/v2 v2.0.0/go.mod h1:34EYjjV15G6myuHOKaJkO7y5tJ1Arq/NfC9Weacr2mc=
 github.com/Monibuca/engine/v2 v2.1.3 h1:RGhMRjAB9Jxte06OgQX+2G8TaXJ6JyYllnBxmEx6yQo=
 github.com/Monibuca/engine/v2 v2.1.3/go.mod h1:34EYjjV15G6myuHOKaJkO7y5tJ1Arq/NfC9Weacr2mc=
-github.com/Monibuca/engine/v2 v2.2.2 h1:ho5M3aFW9Mlj9Lb56Qvk0m+9L8yWc7RhwPh8dRWAeBk=
-github.com/Monibuca/engine/v2 v2.2.2/go.mod h1:34EYjjV15G6myuHOKaJkO7y5tJ1Arq/NfC9Weacr2mc=
 github.com/Monibuca/plugin-ts v1.2.0 h1:SmEK4ObVTjkeZbNRjnv9xqdOGx2OIbo/tOwlv0nWAQg=
 github.com/Monibuca/plugin-ts v1.2.0/go.mod h1:F75q9q3TFG3u/UVBBR67p1BN1Oc/Vp6fe7AGZzTCJ40=
 github.com/Monibuca/plugin-ts v1.2.1 h1:Y2QgEal9/ot43QEvtzRkmA8yk+N2uzieAzKuujZJFMs=
@@ -38,6 +36,10 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/quangngotan95/go-m3u8 v0.1.0 h1:8oseBjJn5IKHQKdRZwSNskkua3NLrRtlvXXtoVgBzMk=
 github.com/quangngotan95/go-m3u8 v0.1.0/go.mod h1:smzfWHlYpBATVNu1GapKLYiCtEo5JxridIgvvudZ+Wc=
+github.com/robfig/cron v1.2.0 h1:ZjScXvvxeQ63Dbyxy76Fj3AT3Ut0aKsyd2/tl3DTMuQ=
+github.com/robfig/cron v1.2.0/go.mod h1:JGuDeoQd7Z6yL4zQhZ3OPEVHB7fL6Ka6skscFHfmt2k=
+github.com/robfig/cron/v3 v3.0.1 h1:WdRxkvbJztn8LMz/QEvLN5sBU+xKpSqwwUO1Pjr4qDs=
+github.com/robfig/cron/v3 v3.0.1/go.mod h1:eQICP3HwyT7UooqI/z+Ov+PtYAWygg1TEWWzGIFLtro=
 github.com/shirou/gopsutil v2.20.1+incompatible h1:oIq9Cq4i84Hk8uQAUOG3eNdI/29hBawGrD5YRl6JRDY=
 github.com/shirou/gopsutil v2.20.1+incompatible/go.mod h1:5b4v6he4MtMOwMlS0TUMTu2PcXUg8+E1lC7eC3UO/RA=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
